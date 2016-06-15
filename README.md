@@ -1,5 +1,5 @@
 # connected-y
-Unmanned Vehicles System for Creative Defense 
+Unmanned Aero Vehicles System for Creative Defense  (__UAVSCD__)
 
 ![winner candidates] (https://github.com/hyunghunny/connected-y/blob/master/orientation_pic.jpg)
 
