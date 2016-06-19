@@ -42,8 +42,8 @@ background_speed = 4
 frame_rate = 15
 
 FIRE_REWARD = 0  # when the UAV fires a bullet
-CRASH_REWARD = -3 # when the UAV crashes an enemy or a missile
-PASS_REWARD = -1  # when an enemy passed the UAV
+CRASH_REWARD = -30 # when the UAV crashes an enemy or a missile
+PASS_REWARD = -2  # when an enemy passed the UAV
 HIT_REWARD = 1  # when a bullet hits an enemy
 
 # game init
@@ -115,7 +115,6 @@ class GameState:
         self.uav1_y_change = 0
         self.isShotenemy = False
         self.boom_count = 0
-        self.reward = 0
 
         self.bullet_xy = []
         self.x = pad_width * 0.05
@@ -126,12 +125,12 @@ class GameState:
         self.missile_x = pad_width
         self.missile_y = random.randrange(0, pad_height-missile_height)
         self.crashed = False
-    
-
-    def frame_step(self,input_vect):
+        self.score = 0
+        
+    def frame_step(self, input_vect):
         pygame.event.pump()
         reward = 0
-        scroe = 0
+        
 
         if sum(input_vect) != 1:
             raise ValueError('Multiple input actions!')
@@ -141,9 +140,9 @@ class GameState:
         elif input_vect[2] == 1:#Key down
             self.uav1_y_change = aircraft_speed
         elif input_vect[3] == 1:# launch a missile 
-            self.bullet_x = x + aircraft_width
-            self.bullet_y = y + aircraft_height/2
-            self.bullet_xy.append([bullet_x, bullet_y])
+            self.bullet_x = self.uav1_x + aircraft_width
+            self.bullet_y = self.uav1_y + aircraft_height/2
+            self.bullet_xy.append([self.bullet_x, self.bullet_y])
         else: # don't move
             self.uav1_y_change = 0
         
@@ -165,7 +164,7 @@ class GameState:
         drawObject(background1, self.background1_x, 0)   
         drawObject(background2, self.background2_x, 0)  
         
-        drawScore(score)
+        drawScore(self.score)
         
         # Check the number of enemy passed
         #if score > 2:
@@ -180,11 +179,11 @@ class GameState:
             
 
        # enemy Position
-        self.uav1_enemy_x -= enemy_speed
+        self.enemy_x -= enemy_speed
         if self.enemy_x <= 0:
             self.enemy_x = pad_width
             self.enemy_y = random.randrange(0, pad_height-enemy_height)
-            score += PASS_REWARD
+            self.score += PASS_REWARD
             reward = PASS_REWARD
 
         # missile Position
@@ -203,7 +202,7 @@ class GameState:
                     if bxy[1] > self.enemy_y and bxy[1] < self.enemy_y + enemy_height:
                         self.bullet_xy.remove(bxy)
                         self.isShotenemy = True
-                        score += HIT_REWARD
+                        self.score += HIT_REWARD
                         reward = HIT_REWARD
                         
                 if bxy[0] >= pad_width:
@@ -214,24 +213,26 @@ class GameState:
 
 
         # Check aircraft crashed by enemy
-        if x + aircraft_width > self.enemy_x:
-            if ((y+aircraft_height > self.enemy_y) and (y < self.enemy_y+enemy_height)):
-                score += CRASH_REWARD  
+        if self.uav1_x + aircraft_width > self.enemy_x:
+            if ((self.uav1_y+aircraft_height > self.enemy_y) and (self.uav1_y < self.enemy_y+enemy_height)):
+                self.score += CRASH_REWARD  
                 reward = CRASH_REWARD
-
+                self.crashed = True
+                
         # Check aircraft crashed by missile
-        if x + aircraft_width > self.missile_x:
-            if ((y+aircraft_height > self.missile_y) and (y < self.missile_y+missile_height)):
-                score += CRASH_REWARD     
+        if self.uav1_x + aircraft_width > self.missile_x:
+            if ((self.uav1_y+aircraft_height > self.missile_y) and (self.uav1_y < self.missile_y+missile_height)):
+                self.score += CRASH_REWARD     
                 reward = CRASH_REWARD
+                self.crashed = True
              
-        drawObject(aircraft, self.uav1_x, self.uav1_yy)        
+        drawObject(aircraft, self.uav1_x, self.uav1_y)        
         
         if len(self.bullet_xy) != 0:
             for bx, by in self.bullet_xy:
                 drawObject(bullet, bx, by)
         
-        if not isShotenemy:
+        if not self.isShotenemy:
             drawObject(enemy, self.enemy_x, self.enemy_y)
         else:
             drawObject(boom, self.enemy_x, self.enemy_y)
@@ -242,15 +243,33 @@ class GameState:
                 self.enemy_y = random.randrange(0, pad_height - enemy_height)
                 self.isShotenemy = False
                 
-        image_data = pygame.surfarray.array3d(pygame.display.get_surface())
+        
         drawObject(missile, self.missile_x, self.missile_y)
-        
-        image_data = pygame.surfarray.array3d(pygame.display.get_surface())        
-        
+         
+        image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         pygame.display.update()
         clock.tick(frame_rate)
         
-        terminal = False # Now, it is a dummy. But if there exists 'game over', we need use it.
+        terminal = False
+        if self.crashed:
+            self.uav1_x = pad_width * 0.05
+            self.uav1_y = pad_height * 0.8
+            self.uav1_y_change = 0
+            self.isShotenemy = False
+            self.boom_count = 0
+
+            self.bullet_xy = []
+            self.x = pad_width * 0.05
+            self.background1_x = 0
+            self.background2_x = background_width
+            self.enemy_x = pad_width
+            self.enemy_y = random.randrange(0, pad_height-enemy_height)
+            self.missile_x = pad_width
+            self.missile_y = random.randrange(0, pad_height-missile_height)
+            self.crashed = False
+            self.score = 0
+            terminal = True
+        
         print "reward =", reward
 
         return image_data, reward, terminal
