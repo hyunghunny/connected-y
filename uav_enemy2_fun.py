@@ -64,7 +64,8 @@ aircraft = pygame.image.load('images/plane1.png')
 background1 = pygame.image.load('images/background.png')
 background2 = background1.copy()
     
-enemy = pygame.image.load('images/enemy.png')
+enemy1 = pygame.image.load('images/enemy.png')
+enemy2 = pygame.image.load('images/enemy.png')
 #missile = pygame.image.load('images/missile.png')
 boom = pygame.image.load('images/explosion.png')
 bullet = pygame.image.load('images/bullet.png')
@@ -120,15 +121,18 @@ class GameState:
         self.uav1_x = pad_width * 0.05
         self.uav1_y = pad_height * 0.8
         self.uav1_y_change = 0
-        self.isShotenemy = False
+        self.isShotenemy1 = False
+        self.isShotenemy2 = False
         self.boom_count = 0
 
         self.bullet_xy = []
         self.x = pad_width * 0.05
         self.background1_x = 0
         self.background2_x = background_width
-        self.enemy_x = pad_width
-        self.enemy_y = random.randrange(0, pad_height-enemy_height)
+        self.enemy1_x = pad_width
+        self.enemy1_y = random.randrange(0, pad_height-enemy_height)
+        self.enemy2_x = pad_width
+        self.enemy2_y = random.randrange(0, pad_height-enemy_height)
         self.crashed = False
         self.score = 0
         
@@ -184,12 +188,18 @@ class GameState:
             
 
        # enemy Position
-        self.enemy_x -= enemy_speed
-        if self.enemy_x <= 0:
-            self.enemy_x = pad_width
-            self.enemy_y = random.randrange(0, pad_height-enemy_height)
+        self.enemy1_x -= enemy_speed
+        if self.enemy1_x <= 0:
+            self.enemy1_x = pad_width
+            self.enemy1_y = random.randrange(0, pad_height-enemy_height)
             self.score += PASS_REWARD
             reward = PASS_REWARD
+        if self.enemy2_x <= 0:
+            self.enemy2_x = pad_width
+            self.enemy2_y = random.randrange(0, pad_height-enemy_height)
+            self.score += PASS_REWARD
+            reward = PASS_REWARD
+        
 
         # Bullets Position
         if len(self.bullet_xy) != 0:
@@ -197,10 +207,17 @@ class GameState:
                 bxy[0] += bullet_speed
                 self.bullet_xy[i][0] = bxy[0]
                 
-                if bxy[0] > self.enemy_x:
-                    if bxy[1] > self.enemy_y and bxy[1] < self.enemy_y + enemy_height:
+                if bxy[0] > self.enemy1_x:
+                    if bxy[1] > self.enemy1_y and bxy[1] < self.enemy1_y + enemy_height:
                         self.bullet_xy.remove(bxy)
-                        self.isShotenemy = True
+                        self.isShotenemy1 = True
+                        self.score += HIT_REWARD
+                        reward = HIT_REWARD
+                
+                if bxy[0] > self.enemy2_x:
+                    if bxy[1] > self.enemy2_y and bxy[1] < self.enemy2_y + enemy_height:
+                        self.bullet_xy.remove(bxy)
+                        self.isShotenemy2 = True
                         self.score += HIT_REWARD
                         reward = HIT_REWARD
                         
@@ -212,8 +229,14 @@ class GameState:
 
 
         # Check aircraft crashed by enemy
-        if self.uav1_x + aircraft_width > self.enemy_x:
-            if ((self.uav1_y+aircraft_height > self.enemy_y) and (self.uav1_y < self.enemy_y+enemy_height)):
+        if self.uav1_x + aircraft_width > self.enemy1_x:
+            if ((self.uav1_y+aircraft_height > self.enemy1_y) and (self.uav1_y < self.enemy1_y+enemy_height)):
+                self.score += CRASH_REWARD  
+                reward = CRASH_REWARD
+                self.crashed = True
+        
+        if self.uav1_x + aircraft_width > self.enemy2_x:
+            if ((self.uav1_y+aircraft_height > self.enemy2_y) and (self.uav2_y < self.enemy2_y+enemy_height)):
                 self.score += CRASH_REWARD  
                 reward = CRASH_REWARD
                 self.crashed = True
@@ -225,19 +248,30 @@ class GameState:
             for bx, by in self.bullet_xy:
                 drawObject(bullet, bx, by)
         
-        if not self.isShotenemy:
-            drawObject(enemy, self.enemy_x, self.enemy_y)
+        
+        if not self.isShotenemy1:
+            drawObject(enemy1, self.enemy1_x, self.enemy1_y)
         else:
-            drawObject(boom, self.enemy_x, self.enemy_y)
+            drawObject(boom, self.enemy1_x, self.enemy1_y)
             self.boom_count += 1
             if self.boom_count > 5:
                 self.boom_count = 0
-                self.enemy_x = pad_width
-                self.enemy_y = random.randrange(0, pad_height - enemy_height)
-                self.isShotenemy = False
+                self.enemy1_x = pad_width
+                self.enemy1_y = random.randrange(0, pad_height - enemy_height)
+                self.isShotenemy1 = False
+                
+        if not self.isShotenemy2:
+            drawObject(enemy2, self.enemy2_x, self.enemy2_y)
+        else:
+            drawObject(boom, self.enemy2_x, self.enemy2_y)
+            self.boom_count += 1
+            if self.boom_count > 5:
+                self.boom_count = 0
+                self.enemy1_x = pad_width
+                self.enemy1_y = random.randrange(0, pad_height - enemy_height)
+                self.isShotenemy1 = False
                 
         
-        drawObject(missile, self.missile_x, self.missile_y)
          
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         pygame.display.update()
@@ -255,8 +289,10 @@ class GameState:
             self.x = pad_width * 0.05
             self.background1_x = 0
             self.background2_x = background_width
-            self.enemy_x = pad_width
-            self.enemy_y = random.randrange(0, pad_height-enemy_height)
+            self.enemy1_x = pad_width
+            self.enemy1_y = random.randrange(0, pad_height-enemy_height)
+            self.enemy2_x = pad_width
+            self.enemy2_y = random.randrange(0, pad_height-enemy_height)
             self.crashed = False
             self.score = 0
             terminal = True

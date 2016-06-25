@@ -13,7 +13,7 @@ sys.path.append('/usr/local/lib/python2.7/site-packages')
 import cv2
 import sys
 sys.path.append("Wrapped Game Code/")
-import uav_fun as game
+import uav_enemy2_fun as game
 import random
 import numpy as np
 from collections import deque
