@@ -194,6 +194,8 @@ class GameState:
             self.enemy1_y = random.randrange(0, pad_height-enemy_height)
             self.score += PASS_REWARD
             reward = PASS_REWARD
+        
+        self.enemy2_x -= enemy_speed
         if self.enemy2_x <= 0:
             self.enemy2_x = pad_width
             self.enemy2_y = random.randrange(0, pad_height-enemy_height)
@@ -207,25 +209,31 @@ class GameState:
                 bxy[0] += bullet_speed
                 self.bullet_xy[i][0] = bxy[0]
                 
+                remove_flag = False
                 if bxy[0] > self.enemy1_x:
                     if bxy[1] > self.enemy1_y and bxy[1] < self.enemy1_y + enemy_height:
-                        self.bullet_xy.remove(bxy)
+                        #self.bullet_xy.remove(bxy)
+                        remove_flag = True                        
                         self.isShotenemy1 = True
                         self.score += HIT_REWARD
                         reward = HIT_REWARD
                 
                 if bxy[0] > self.enemy2_x:
                     if bxy[1] > self.enemy2_y and bxy[1] < self.enemy2_y + enemy_height:
-                        self.bullet_xy.remove(bxy)
+                        #self.bullet_xy.remove(bxy)
+                        remove_flag = True  
                         self.isShotenemy2 = True
                         self.score += HIT_REWARD
                         reward = HIT_REWARD
                         
                 if bxy[0] >= pad_width:
                     try:
-                        self.bullet_xy.remove(bxy)
+                        remove_flag = True  
+                        #self.bullet_xy.remove(bxy)
                     except:
                         pass
+                if remove_flag:
+                    self.bullet_xy.remove(bxy)
 
 
         # Check aircraft crashed by enemy
@@ -236,7 +244,7 @@ class GameState:
                 self.crashed = True
         
         if self.uav1_x + aircraft_width > self.enemy2_x:
-            if ((self.uav1_y+aircraft_height > self.enemy2_y) and (self.uav2_y < self.enemy2_y+enemy_height)):
+            if ((self.uav1_y+aircraft_height > self.enemy2_y) and (self.uav1_y < self.enemy2_y+enemy_height)):
                 self.score += CRASH_REWARD  
                 reward = CRASH_REWARD
                 self.crashed = True
@@ -267,9 +275,9 @@ class GameState:
             self.boom_count += 1
             if self.boom_count > 5:
                 self.boom_count = 0
-                self.enemy1_x = pad_width
-                self.enemy1_y = random.randrange(0, pad_height - enemy_height)
-                self.isShotenemy1 = False
+                self.enemy2_x = pad_width
+                self.enemy2_y = random.randrange(0, pad_height - enemy_height)
+                self.isShotenemy2 = False
                 
         
          
